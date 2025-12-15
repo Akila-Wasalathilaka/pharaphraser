@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Paraphraser</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #ffffff;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #bb86fc;
+    }
+    textarea {
+      width: 100%;
+      max-width: 600px;
+      height: 150px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #1e1e1e;
+      color: #ffffff;
+      border: 1px solid #333;
+      border-radius: 5px;
+      resize: vertical;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #bb86fc;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      background-color: #9c4dcc;
+    }
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+    }
+    #output {
+      width: 100%;
+      max-width: 600px;
+      min-height: 150px;
+      padding: 10px;
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    #loading {
+      display: none;
+      color: #bb86fc;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Paraphraser</h1>
+  <p>Enter text to paraphrase it naturally and academically.</p>
+  <textarea id="input" placeholder="Enter your text here..."></textarea>
+  <button id="paraphraseBtn">Paraphrase</button>
+  <div id="loading">Paraphrasing...</div>
+  <div id="output"></div>
+  <script src="script.js"></script>
+</body>
+</html>
