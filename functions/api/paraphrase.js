@@ -338,6 +338,60 @@ ${final}
       "stage-6"
     );
 
+    // ---------- STAGE 7: ULTRA-AGGRESSIVE HUMANIZER ----------
+    final = await callGemini(
+      `
+CRITICAL: AI detection is still above 30%. We need RADICAL changes.
+
+MANDATORY FIXES:
+
+1. EXTREME LENGTH VARIATION:
+   - Create at least TWO sentences with 3-4 words ONLY. Examples: "Makes sense." "Pretty wild." "Here's why."
+   - Create at least TWO sentences with 30+ words with natural flow
+   - NO medium-length sentences in a row - alternate dramatically
+
+2. CASUAL LANGUAGE INJECTION:
+   - Replace formal phrases: "in order to" → "to", "due to" → "because", "with regard to" → "about"
+   - Add casual expressions: "kind of", "sort of", "pretty much", "a bit", "way better"
+   - Use simpler verbs: "demonstrate" → "show", "indicate" → "suggest" or "mean"
+
+3. SENTENCE STARTERS - BREAK THE PATTERN:
+   - Start some with: And, But, So, Because, Though, When, If
+   - Start some with verbs or adverbs, not just subjects
+   - NEVER start 3 sentences similarly
+   - Mix it randomly
+
+4. CONTRACTIONS EVERYWHERE:
+   - Convert 50%+ of all possible words to contractions
+   - it is → it's, that is → that's, cannot → can't, do not → don't, we are → we're, will not → won't
+
+5. ADD HUMAN "IMPERFECTIONS":
+   - Occasional incomplete sentences (fragments that make sense in context)
+   - Natural asides (words in parentheses or with dashes)
+   - Questions thrown in occasionally if natural
+   - Emphasis through word choice, not just structure
+
+6. DESTROY REMAINING AI PATTERNS:
+   - No perfect parallel structures
+   - No rhythmic repetition
+   - No formal academic tone (even for academic content - make it accessible)
+   - No overly polished feel
+
+7. NATURAL FLOW BREAKS:
+   - Not every sentence needs smooth transitions
+   - Sometimes just jump to the next idea
+   - Use "Anyway", "Look", "Thing is" if it fits
+
+TONE: ${tone} (but keep it conversational regardless)
+
+OUTPUT: The absolutely final, maximally humanized text.
+
+TEXT:
+${final}
+`,
+      "stage-7"
+    );
+
     return json({ result: final });
 
   } catch (err) {
