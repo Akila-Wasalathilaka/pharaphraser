@@ -296,19 +296,19 @@
     const copyNotification = $('copyNotification');
 
     function updateWordCount() {
-      const inputWords = input.value.trim() ? input.value.trim().split(/\s+/).length : 0;
-      const outputWords = output.value.trim() ? output.value.trim().split(/\s+/).length : 0;
+      const inputWords = inputTextarea.value.trim() ? inputTextarea.value.trim().split(/\s+/).length : 0;
+      const outputWords = outputTextarea.value.trim() ? outputTextarea.value.trim().split(/\s+/).length : 0;
       inputCount.textContent = `${inputWords} word${inputWords !== 1 ? 's' : ''}`;
       outputCount.textContent = `${outputWords} word${outputWords !== 1 ? 's' : ''}`;
     }
 
     function showStatus(message, type) {
-      status.textContent = message;
-      status.className = `status show ${type}`;
+      statusDiv.textContent = message;
+      statusDiv.className = `status show ${type}`;
     }
 
     function hideStatus() {
-      status.className = 'status';
+      statusDiv.className = 'status';
     }
 
     function showCopyNotification() {
@@ -317,7 +317,7 @@
     }
 
     humanizeBtn.addEventListener('click', async () => {
-      const text = input.value.trim();
+      const text = inputTextarea.value.trim();
       
       if (!text) {
         showStatus('Please enter some text to humanize', 'error');
@@ -331,7 +331,7 @@
 
       hideStatus();
       humanizeBtn.disabled = true;
-      output.value = '';
+      outputTextarea.value = '';
       copyBtn.classList.remove('show');
       showStatus('Humanizing your text... This may take 30-60 seconds', 'loading');
 
@@ -339,19 +339,19 @@
         const response = await fetch('/api/paraphrase', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, tone: tone.value })
+          body: JSON.stringify({ text, tone: toneSelect.value })
         });
 
         const data = await response.json();
 
         if (response.ok && data.result) {
-          output.value = data.result;
+          outputTextarea.value = data.result;
           updateWordCount();
           copyBtn.classList.add('show');
           showStatus('✓ Text successfully humanized!', 'success');
           setTimeout(hideStatus, 3000);
         } else {
-          showStatus(data.error || 'Failed to humanize text', 'error');
+          showStatus(data.details || data.error || 'Failed to humanize text', 'error');
         }
       } catch (error) {
         showStatus('Network error. Please try again.', 'error');
@@ -362,31 +362,31 @@
     });
 
     copyBtn.addEventListener('click', async () => {
-      if (!output.value) return;
+      if (!outputTextarea.value) return;
       
       try {
-        await navigator.clipboard.writeText(output.value);
+        await navigator.clipboard.writeText(outputTextarea.value);
         showCopyNotification();
       } catch (err) {
-        output.select();
+        outputTextarea.select();
         document.execCommand('copy');
         showCopyNotification();
       }
     });
 
     clearBtn.addEventListener('click', () => {
-      input.value = '';
-      output.value = '';
+      inputTextarea.value = '';
+      outputTextarea.value = '';
       updateWordCount();
       copyBtn.classList.remove('show');
       hideStatus();
     });
 
-    input.addEventListener('input', updateWordCount);
-    output.addEventListener('input', updateWordCount);
+    inputTextarea.addEventListener('input', updateWordCount);
+    outputTextarea.addEventListener('input', updateWordCount);
     
     // Enable Enter key to humanize
-    input.addEventListener('keydown', (e) => {
+    inputTextarea.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 'Enter') {
         humanizeBtn.click();
       }
