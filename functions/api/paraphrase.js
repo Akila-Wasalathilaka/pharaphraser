@@ -287,6 +287,57 @@ ${final}
       "stage-5"
     );
 
+    // ---------- STAGE 6: AI DETECTOR BYPASS ----------
+    final = await callGemini(
+      `
+This is the FINAL PASS. Your ONLY job: make this pass AI detection at 0-20% AI likelihood.
+
+AI DETECTORS SPECIFICALLY FLAG THESE - ELIMINATE THEM ALL:
+
+❌ BANNED WORDS (replace with natural alternatives):
+- Additionally, Furthermore, Moreover, Consequently → use "Also", "And", "Plus", "So"
+- Utilize, Leverage → use "use"
+- Demonstrates, Showcases → use "shows"
+- Significant, Substantial → use "big", "major", "important"
+- Implement, Execute → use "do", "make", "put in place"
+- Facilitate → use "help", "make easier"
+- Enhance → use "improve", "make better"
+- Comprehensive → use "complete", "full"
+- Robust → use "strong", "solid"
+- Ensure → use "make sure"
+
+❌ AI SENTENCE PATTERNS (rewrite these):
+- "It is important to note that..." → just state the fact
+- "This allows for..." → use "This lets..."
+- "In order to..." → use "To..."
+- "Due to the fact that..." → use "Because..."
+- "For the purpose of..." → use "To..."
+
+✅ DO THIS:
+1. Replace at least 3 formal words with casual equivalents
+2. Add 2+ contractions (don't, can't, it's, won't)
+3. Start at least 1 sentence with: And, But, or So
+4. Make shortest sentence 5 words or less
+5. Make longest sentence 25+ words
+6. Use simple, direct language
+7. Break any repetitive rhythm
+
+✅ HUMAN WRITING SIGNS:
+- Varied punctuation (mix periods, commas, occasional dashes)
+- Natural flow, not robotic precision
+- Some sentences that dive straight into the point
+- Conversational tone (like explaining to a colleague)
+
+Keep the ${tone} tone and all original meaning.
+
+OUTPUT: The final undetectable text ONLY.
+
+TEXT:
+${final}
+`,
+      "stage-6"
+    );
+
     return json({ result: final });
 
   } catch (err) {
