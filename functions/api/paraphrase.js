@@ -77,25 +77,44 @@ export async function onRequestPost({ request, env }) {
       return output;
     }
 
-    // ---------- STAGE 1: DEEP HUMANIZATION ----------
+    // ---------- STAGE 1: AGGRESSIVE REWRITE ----------
     const variationsRaw = await callGemini(
       `
-You are a skilled human writer rewriting content to sound completely natural and undetectable.
+REWRITE this text to be completely undetectable by AI detectors. Think like a real human writer.
 
-Create THREE completely different versions of the text below. For each version:
-- Use varied sentence lengths (mix short punchy sentences with longer flowing ones)
-- Start sentences differently (avoid repetitive patterns)
-- Use natural transitions and connectors humans use ("though", "however", "actually", "in fact")
-- Mix sentence structures (simple, compound, complex)
-- Use active voice predominantly but occasionally passive where natural
-- Include subtle informal touches if appropriate (contractions, natural phrasing)
-- Avoid overly formal or robotic patterns
-- Change word order and paragraph flow significantly
-- Use synonyms that humans would naturally choose, not thesaurus replacements
+CREATE THREE VERSIONS using these strict rules:
 
-Output ONLY the three rewrites separated by |||. No explanations.
+1. SENTENCE VARIETY (critical):
+   - At least 2 very short sentences (3-7 words)
+   - At least 2 long sentences (20+ words)
+   - NO patterns - random mix of lengths
+   - Start sentences in completely different ways
 
-ORIGINAL TEXT:
+2. HUMAN PATTERNS:
+   - Use casual connectors: "And", "But", "So" to start sentences sometimes
+   - Add natural fillers: "actually", "basically", "really", "just"
+   - Use contractions freely: don't, can't, it's, we're, I'm
+   - Occasionally use incomplete thoughts that get completed
+
+3. BREAK AI PATTERNS:
+   - NEVER use: "furthermore", "moreover", "additionally", "consequently" 
+   - AVOID: "significant", "utilize", "demonstrate", "implement"
+   - NO bullet-point-like structures
+   - NO parallel sentence structures (every sentence should be structurally different)
+
+4. WORD CHOICES:
+   - Use simpler, everyday words
+   - Choose unexpected but natural synonyms
+   - Vary how you express ideas (don't repeat patterns)
+
+5. FLOW:
+   - Write like you're talking to someone
+   - Some ideas flow naturally into the next, some don't
+   - Not every transition needs to be perfect
+
+OUTPUT: Three complete rewrites separated by |||. NO explanations.
+
+TEXT:
 ${text}
 `,
       "stage-1"
@@ -139,27 +158,51 @@ Reply ONLY with the number 1, 2, or 3.
 
     let selected = variations[index];
 
-    // ---------- STAGE 3: ANTI-AI-DETECTION REFINEMENT ----------
+    // ---------- STAGE 3: PATTERN DESTROYER ----------
     selected = await callGemini(
       `
-You are refining this text to be completely undetectable by AI detection tools.
+AI DETECTORS look for patterns. Your job: DESTROY all patterns.
 
-Apply these human writing characteristics:
-1. Vary sentence rhythm - mix 5-word sentences with 20+ word sentences
-2. Use natural human connectors ("and", "but", "though", "while", "since")
-3. Break up any repetitive patterns in sentence structure
-4. Use contractions naturally where appropriate (don't, it's, we're)
-5. Add slight stylistic variation (not every sentence should follow subject-verb-object)
-6. Use more specific, concrete language over generic terms
-7. Avoid these AI tells:
-   - Starting multiple sentences the same way
-   - Overuse of formal vocabulary
-   - Perfectly balanced sentence lengths
-   - Lists with identical grammatical structure
-   - Overuse of adverbs (particularly, significantly, notably)
-8. Write like you're explaining to a friend, not writing an essay
+APPLY THESE FIXES:
 
-Output ONLY the refined text. No explanations.
+1. SENTENCE LENGTH CHAOS:
+   - Current text probably has similar-length sentences (AI habit)
+   - FIX: Make some 4-5 words. Others 25+ words. Random mix.
+   - Count the words - force variety
+
+2. SENTENCE STARTERS:
+   - Check: Do sentences start similarly? (The, It, This, etc.)
+   - FIX: Start with different parts of speech - verbs, adverbs, conjunctions
+   - Use "And", "But", "So" sometimes (humans do this, AI avoids it)
+
+3. VOCABULARY DOWNGRADE:
+   - Replace fancy AI words with normal ones:
+   - "utilize" → "use"
+   - "demonstrate" → "show" 
+   - "significant" → "big" or "major"
+   - "implement" → "do" or "put in place"
+   - "furthermore" → "also" or "and"
+
+4. ADD HUMAN QUIRKS:
+   - Use contractions everywhere natural
+   - Add emphasis words: "really", "actually", "pretty", "quite"
+   - Occasional casual phrasing
+   - Not every sentence needs perfect transitions
+
+5. RHYTHM BREAKING:
+   - AI loves: statement, statement, statement
+   - Humans use: short punch. Long explanation that flows. Medium followup.
+   - Mix it completely randomly
+
+6. REMOVE:
+   - All adverbs ending in -ly if possible
+   - Perfect parallel structures  
+   - Overly formal tone
+   - Academic-sounding phrases
+
+Write like a human blogs or talks, not like AI writes essays.
+
+OUTPUT: Refined text only.
 
 TEXT:
 ${selected}
@@ -194,29 +237,49 @@ ${selected}
       "stage-4"
     );
 
-    // ---------- STAGE 5: PERPLEXITY & BURSTINESS OPTIMIZATION ----------
+    // ---------- STAGE 5: FINAL HUMANIZATION PASS ----------
     final = await callGemini(
       `
-AI detectors measure "perplexity" (word predictability) and "burstiness" (sentence length variation).
-Humans have HIGH burstiness (varied sentences) and HIGHER perplexity (less predictable word choices).
+FINAL CHECK: Make this text 100% undetectable.
 
-Rewrite this to maximize both:
+AI DETECTION KILLER TECHNIQUES:
 
-PERPLEXITY (make word choices less predictable):
-- Replace obvious next-word choices with natural alternatives
-- Use less common but appropriate synonyms occasionally
-- Vary your vocabulary - don't repeat the same descriptive words
-- Choose unexpected but fitting transitions
+1. EXTREME SENTENCE VARIATION:
+   - Shortest sentence: 3-5 words MAX
+   - Longest sentence: 25-35 words
+   - Create UNPREDICTABLE pattern: short, long, medium, short, very long, medium, etc.
+   - No two consecutive sentences should be similar length
 
-BURSTINESS (create dramatic sentence length variation):
-- Make some sentences very short. Like this.
-- Then create longer, more flowing sentences that weave together multiple ideas with natural connectors and build a complete thought before ending.
-- Follow with medium-length sentences for balance.
-- Mix it up constantly - avoid any pattern.
+2. WORD UNPREDICTABILITY:
+   - Where AI would say "important" → say "key" or "crucial" or "big deal"
+   - Where AI would say "however" → say "but" or "though" or just start new sentence
+   - Use everyday words, not formal ones
+   - Occasionally use colloquial expressions if appropriate
 
-Target: 30-50% variation in sentence length, with at least 2 sentences under 8 words and 2 over 20 words.
+3. STRUCTURE CHAOS:
+   - Mix simple sentences with complex ones randomly
+   - Some sentences with commas and clauses, others without
+   - Vary how you connect ideas (sometimes with connectors, sometimes just new sentences)
+   - Break expected patterns
 
-Keep all meaning and the ${tone} tone. Output ONLY the final text.
+4. HUMAN TOUCHES:
+   - Contractions in at least 30% of opportunities
+   - Start at least one sentence with "And", "But", or "So"
+   - Use personal pronouns naturally (we, you, I if appropriate)
+   - Add subtle emphasis: "really", "actually", "definitely"
+
+5. TONE CHECK (${tone}):
+   - Simple: Talk like a friend explaining something
+   - Professional: Confident but conversational, not corporate
+   - Academic: Scholarly but not robotic or overly formal
+   - Standard: Natural blog-post style
+
+6. FINAL SCAN:
+   - Count words in each sentence - are they varied enough?
+   - Read aloud - does it sound like a human or AI?
+   - Any repeated sentence patterns? BREAK THEM.
+
+OUTPUT: The final humanized text.
 
 TEXT:
 ${final}
