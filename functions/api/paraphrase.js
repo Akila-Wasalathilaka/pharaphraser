@@ -77,14 +77,25 @@ export async function onRequestPost({ request, env }) {
       return output;
     }
 
-    // ---------- STAGE 1: VARIATIONS ----------
+    // ---------- STAGE 1: DEEP HUMANIZATION ----------
     const variationsRaw = await callGemini(
       `
-Rewrite the text below in THREE different ways.
-Each rewrite must preserve meaning but change structure and wording deeply.
-Output ONLY the three rewrites separated by |||.
+You are a skilled human writer rewriting content to sound completely natural and undetectable.
 
-TEXT:
+Create THREE completely different versions of the text below. For each version:
+- Use varied sentence lengths (mix short punchy sentences with longer flowing ones)
+- Start sentences differently (avoid repetitive patterns)
+- Use natural transitions and connectors humans use ("though", "however", "actually", "in fact")
+- Mix sentence structures (simple, compound, complex)
+- Use active voice predominantly but occasionally passive where natural
+- Include subtle informal touches if appropriate (contractions, natural phrasing)
+- Avoid overly formal or robotic patterns
+- Change word order and paragraph flow significantly
+- Use synonyms that humans would naturally choose, not thesaurus replacements
+
+Output ONLY the three rewrites separated by |||. No explanations.
+
+ORIGINAL TEXT:
 ${text}
 `,
       "stage-1"
@@ -99,10 +110,19 @@ ${text}
       throw new Error("Gemini failed to generate 3 variations");
     }
 
-    // ---------- STAGE 2: SELECT BEST ----------
+    // ---------- STAGE 2: SELECT MOST HUMAN ----------
     const selectionRaw = await callGemini(
       `
-Choose the BEST rewrite based on clarity, naturalness, and meaning preservation.
+You're an expert at detecting natural human writing vs AI patterns.
+
+Which rewrite sounds MOST like authentic human writing?
+Consider:
+- Natural flow and rhythm
+- Varied sentence structure
+- Absence of AI patterns (overly formal, repetitive structures)
+- Human-like word choices
+- Natural transitions
+
 Reply ONLY with the number 1, 2, or 3.
 
 1. ${variations[0]}
@@ -119,12 +139,27 @@ Reply ONLY with the number 1, 2, or 3.
 
     let selected = variations[index];
 
-    // ---------- STAGE 3: NATURAL REFINEMENT ----------
+    // ---------- STAGE 3: ANTI-AI-DETECTION REFINEMENT ----------
     selected = await callGemini(
       `
-Improve the text to sound fluent, natural, and human-written.
-Avoid AI patterns.
-Output ONLY the rewritten text.
+You are refining this text to be completely undetectable by AI detection tools.
+
+Apply these human writing characteristics:
+1. Vary sentence rhythm - mix 5-word sentences with 20+ word sentences
+2. Use natural human connectors ("and", "but", "though", "while", "since")
+3. Break up any repetitive patterns in sentence structure
+4. Use contractions naturally where appropriate (don't, it's, we're)
+5. Add slight stylistic variation (not every sentence should follow subject-verb-object)
+6. Use more specific, concrete language over generic terms
+7. Avoid these AI tells:
+   - Starting multiple sentences the same way
+   - Overuse of formal vocabulary
+   - Perfectly balanced sentence lengths
+   - Lists with identical grammatical structure
+   - Overuse of adverbs (particularly, significantly, notably)
+8. Write like you're explaining to a friend, not writing an essay
+
+Output ONLY the refined text. No explanations.
 
 TEXT:
 ${selected}
@@ -132,17 +167,61 @@ ${selected}
       "stage-3"
     );
 
-    // ---------- STAGE 4: TONE POLISH ----------
-    const final = await callGemini(
+    // ---------- STAGE 4: TONE + FINAL HUMANIZATION ----------
+    let final = await callGemini(
       `
-Rewrite the text in a ${tone} tone.
-Preserve meaning and clarity.
-Output ONLY the final text.
+Apply a ${tone} tone while keeping the text authentically human.
+
+Final polish checklist:
+- Ensure natural, conversational flow
+- Remove any remaining robotic patterns
+- Vary sentence openings
+- Mix sentence complexity (some simple, some complex)
+- Use natural human phrasing for the ${tone} tone
+- Keep it genuine - humans aren't perfect writers
+- Avoid AI red flags: overly formal language, repetitive structures, excessive politeness
+
+If tone is "simple": Use everyday words, short sentences, clear and direct
+If tone is "professional": Confident and clear, but still conversational 
+If tone is "academic": Formal but not robotic, use discipline-appropriate language
+If tone is "standard": Natural middle ground, like a good blog post
+
+Output ONLY the final polished text.
 
 TEXT:
 ${selected}
 `,
       "stage-4"
+    );
+
+    // ---------- STAGE 5: PERPLEXITY & BURSTINESS OPTIMIZATION ----------
+    final = await callGemini(
+      `
+AI detectors measure "perplexity" (word predictability) and "burstiness" (sentence length variation).
+Humans have HIGH burstiness (varied sentences) and HIGHER perplexity (less predictable word choices).
+
+Rewrite this to maximize both:
+
+PERPLEXITY (make word choices less predictable):
+- Replace obvious next-word choices with natural alternatives
+- Use less common but appropriate synonyms occasionally
+- Vary your vocabulary - don't repeat the same descriptive words
+- Choose unexpected but fitting transitions
+
+BURSTINESS (create dramatic sentence length variation):
+- Make some sentences very short. Like this.
+- Then create longer, more flowing sentences that weave together multiple ideas with natural connectors and build a complete thought before ending.
+- Follow with medium-length sentences for balance.
+- Mix it up constantly - avoid any pattern.
+
+Target: 30-50% variation in sentence length, with at least 2 sentences under 8 words and 2 over 20 words.
+
+Keep all meaning and the ${tone} tone. Output ONLY the final text.
+
+TEXT:
+${final}
+`,
+      "stage-5"
     );
 
     return json({ result: final });
