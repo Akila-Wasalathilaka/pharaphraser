@@ -1,109 +1,109 @@
-export async function onRequestPost(context) {
-  const { request, env } = context;
-
+export async function onRequestPost({ request, env }) {
   try {
-    const { text, tone } = await request.json();
+    const body = await request.json();
+    const text = body.text;
+    const tone = body.tone || "standard";
 
-    // Validation
-    if (!text || typeof text !== 'string' || text.length === 0 || text.length > 2000) {
-      return new Response(JSON.stringify({ error: 'Invalid input: text must be a non-empty string under 2000 characters' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+    if (!text || typeof text !== "string" || text.length > 2000) {
+      return json({ error: "Invalid input text" }, 400);
     }
 
-    if (!['standard', 'simple', 'professional', 'academic'].includes(tone)) {
-      return new Response(JSON.stringify({ error: 'Invalid tone: must be one of standard, simple, professional, academic' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+    const allowedTones = ["standard", "simple", "professional", "academic"];
+    if (!allowedTones.includes(tone)) {
+      return json({ error: "Invalid tone" }, 400);
     }
 
-    const apiKey = env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+    if (!env.GEMINI_API_KEY) {
+      return json({ error: "Missing Gemini API key" }, 500);
     }
 
-    // Function to call Gemini API
     async function callGemini(prompt) {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(JSON.stringify(data));
 
-      const data = await response.json();
-      return data.candidates[0].content.parts[0].text.trim();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
     }
 
-    // Stage 1: Generate 3 variations
-    const stage1Prompt = `You are an expert editor. Rewrite the following text by deeply changing sentence structure and wording while preserving the original meaning. Do not add or remove information. Avoid clichés and repetitive phrasing. Generate 3 different variations.
+    // -------- STAGE 1: Generate variations --------
+    const variationsRaw = await callGemini(`
+Rewrite the text below in THREE different ways.
+Each rewrite must preserve meaning but change structure and wording deeply.
+Output ONLY the three rewrites separated by |||.
 
-Text: "${text}"
+TEXT:
+${text}
+`);
 
-Output each variation on a new line, numbered 1., 2., 3.`;
+    const variations = variationsRaw
+      .split("|||")
+      .map(v => v.trim())
+      .filter(Boolean);
 
-    const variationsText = await callGemini(stage1Prompt);
-    const lines = variationsText.split('\n').map(l => l.trim()).filter(l => l);
-    const var1 = lines.find(l => l.startsWith('1.'))?.replace(/^1\.\s*/, '') || '';
-    const var2 = lines.find(l => l.startsWith('2.'))?.replace(/^2\.\s*/, '') || '';
-    const var3 = lines.find(l => l.startsWith('3.'))?.replace(/^3\.\s*/, '') || '';
-
-    if (!var1 || !var2 || !var3) {
-      throw new Error('Failed to generate variations');
+    if (variations.length < 3) {
+      throw new Error("Variation generation failed");
     }
 
-    // Select the best variation
-    const selectPrompt = `Here are 3 paraphrased versions of the text "${text}":
+    // -------- STAGE 2: Select best --------
+    const selectionRaw = await callGemini(`
+Choose the BEST rewrite based on clarity, naturalness, and meaning preservation.
+Reply ONLY with the number 1, 2, or 3.
 
-1. ${var1}
+1. ${variations[0]}
+2. ${variations[1]}
+3. ${variations[2]}
+`);
 
-2. ${var2}
+    const index = ["1", "2", "3"].includes(selectionRaw.trim())
+      ? Number(selectionRaw.trim()) - 1
+      : 0;
 
-3. ${var3}
+    let selected = variations[index];
 
-Select the best one based on meaning preservation, naturalness, and readability. Output only the number (1, 2, or 3).`;
+    // -------- STAGE 3: Natural refinement --------
+    selected = await callGemini(`
+Improve the text to sound fluent, human, and natural.
+Avoid AI patterns.
+Output ONLY the rewritten text.
 
-    const selectedNumStr = await callGemini(selectPrompt);
-    const selectedNum = parseInt(selectedNumStr.trim());
-    let selected;
-    if (selectedNum === 1) selected = var1;
-    else if (selectedNum === 2) selected = var2;
-    else if (selectedNum === 3) selected = var3;
-    else throw new Error('Invalid selection');
+TEXT:
+${selected}
+`);
 
-    // Stage 2: Natural Flow Refinement
-    const stage2Prompt = `Improve the following rewritten text to sound more fluent, natural, and human-written. Vary sentence length and rhythm. Remove robotic or AI-like phrasing. Output ONLY the improved text.
+    // -------- STAGE 4: Tone polish --------
+    const final = await callGemini(`
+Rewrite the text in a ${tone} tone.
+Preserve meaning and clarity.
+Output ONLY the final text.
 
-Text: "${selected}"`;
+TEXT:
+${selected}
+`);
 
-    const stage2Output = await callGemini(stage2Prompt);
+    return json({ result: final });
 
-    // Stage 3: Tone Polishing
-    const stage3Prompt = `Rewrite the following text in a ${tone} tone. Keep clarity, coherence, and meaning intact. Do not explain changes. Output ONLY the final paraphrased text.
-
-Text: "${stage2Output}"`;
-
-    const finalResult = await callGemini(stage3Prompt);
-
-    return new Response(JSON.stringify({ result: finalResult }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
-
-  } catch (error) {
-    console.error(error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+  } catch (err) {
+    console.error("Paraphrase error:", err);
+    return json({ error: "Internal server error" }, 500);
   }
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    }
+  });
 }
