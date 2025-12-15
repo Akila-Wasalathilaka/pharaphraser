@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Paraphraser</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      max-width: 700px;
+      width: 90%;
+      box-sizing: border-box;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #4a4a4a;
+      font-weight: 300;
+    }
+    textarea {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e1e1e1;
+      border-radius: 8px;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: vertical;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+      transition: border-color 0.3s;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    #input {
+      height: 120px;
+    }
+    #output {
+      height: 120px;
+      background: #f9f9f9;
+      color: #555;
+    }
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e1e1;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      background: white;
+      cursor: pointer;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 20px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    #loading {
+      text-align: center;
+      color: #667eea;
+      font-weight: bold;
+      margin-bottom: 20px;
+      display: none;
+    }
+    #counters {
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+    }
+    .error {
+      color: #d9534f;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Paraphraser</h1>
+    <textarea id="input" placeholder="Enter the text you want to paraphrase..."></textarea>
+    <select id="tone">
+      <option value="standard">Standard</option>
+      <option value="simple">Simple</option>
+      <option value="professional">Professional</option>
+      <option value="academic">Academic</option>
+    </select>
+    <button id="paraphraseBtn">Paraphrase</button>
+    <div id="loading">Paraphrasing... Please wait.</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <textarea id="output" readonly placeholder="Paraphrased text will appear here..."></textarea>
+    <div id="counters"></div>
+  </div>
+
+  <script>
+    const inputTextarea = document.getElementById('input');
+    const toneSelect = document.getElementById('tone');
+    const paraphraseBtn = document.getElementById('paraphraseBtn');
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
+    const outputTextarea = document.getElementById('output');
+    const countersDiv = document.getElementById('counters');
+
+    paraphraseBtn.addEventListener('click', async () => {
+      const text = inputTextarea.value.trim();
+      if (!text) {
+        showError('Please enter some text to paraphrase.');
+        return;
+      }
+      if (text.length > 2000) {
+        showError('Text must be under 2000 characters.');
+        return;
+      }
+
+      hideError();
+      paraphraseBtn.disabled = true;
+      loadingDiv.style.display = 'block';
+      outputTextarea.value = '';
+
+      try {
+        const response = await fetch('/api/paraphrase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text: text,
+            tone: toneSelect.value
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.result) {
+          outputTextarea.value = data.result;
+        } else {
+          showError(data.error || 'An error occurred while paraphrasing.');
+        }
+      } catch (error) {
+        showError('Network error. Please try again.');
+        console.error('Fetch error:', error);
+      } finally {
+        paraphraseBtn.disabled = false;
+        loadingDiv.style.display = 'none';
+      }
+    });
+
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+
+    function hideError() {
+      errorDiv.style.display = 'none';
+    }
+
+    function updateCounters() {
+      const text = inputTextarea.value;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const characters = text.length;
+      countersDiv.textContent = `Words: ${words} | Characters: ${characters}`;
+    }
+
+    inputTextarea.addEventListener('input', updateCounters);
+    updateCounters();
+  </script>
+</body>
+</html>
